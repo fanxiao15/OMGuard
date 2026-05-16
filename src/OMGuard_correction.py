@@ -160,25 +160,23 @@ def generate_qwen_3_language_8b_response(
 
 
 def main(args):
-    datas = json.load(open(f"datas/test_data.json"))
-    all_results = {}
-    sample_count = 0
-    resume_count = 0
+    
+    # ❕ Placeholder for the actual data loading and processing logic
+    Misleading_Caption = ""
+    Full_Article_Context = ""
+    Detection_Rationales = ""
+    image_path = f"/datas/test_img/xxx.jpg"
 
-    if args.resume:
-        pre_result_path = open(
-            f"../results/misleading_detection_{args.data_type}_{args.model}.json",
-            encoding="utf-8",
-        )
-        pre_results = json.load(pre_result_path)
-        for key in pre_results:
-            all_results[key] = pre_results[key]
-            resume_count += 1
 
-    CI_ih_View_Tmp = read_prompt_from_md("../prompts/reader_view_ih.md")
-    CI_context_View_Tmp = read_prompt_from_md("../prompts/reader_view_context.md")
-    misleading_tmp = read_prompt_from_md("../prompts/compare_misleading.md")
+   
+    if args.correction_type == "free_form":
+        correction_tmp = read_prompt_from_md("../prompts/free_form.md")
+    elif args.correction_type == "mini_edit":
+        correction_tmp = read_prompt_from_md("../prompts/mini_edit.md")
 
+    prompt = correction_tmp.replace("{{NEWS_HEADLINE}}", Misleading_Caption).replace("{{NEWS_CONTEXT}}", Full_Article_Context).replace("{{MISLEADING_REASON}}", Detection_Rationales).replace("{{limit_words}}", str(args.limit_words))
+
+    # ❕ Placeholder for the actual model paths
     base_model_path = "local_path/Qwen3-VL-8B-Instruct"
     checkpoint_path = "output/checkpoint-qwen-ft"
 
@@ -189,93 +187,19 @@ def main(args):
     )
     print("Finish Loading Model.\n")
 
-    for key in datas:
-        sample_count += 1
-        if sample_count <= resume_count:
-            continue
-
-        image_path = f"/datas/test_img/{key}.jpg"
-
-        caption = datas[key]["caption"]
-        article_context = datas[key]["Article_Context"]
-
-        print("*" * 20, f"Sample {sample_count} / {len(datas)}", "*" * 20)
-        print("===================================")
-        print("Vanilla caption: ", caption)
-        print("article_context: ", article_context)
-
-        for repeat in range(5):
-            try:
-                ih_reader_view_response = generate_qwen_3_vl_8b_response(
+    correction_response = generate_qwen_3_vl_8b_response(
                     args,
                     local_models,
                     local_processors,
-                    CI_ih_View_Tmp.replace("{{NEWS_HEADLINE}}", caption),
+                    prompt,
                     image_path,
                     system="",
                 )
-                ih_reader_view_response = extract_json_string(ih_reader_view_response)
+    correction_response = extract_json_string(correction_response)
 
-                context_reader_view_response = generate_qwen_3_language_8b_response(
-                    args,
-                    local_models,
-                    local_processors,
-                    CI_context_View_Tmp.replace("{{CONTEXT}}", article_context),
-                    system="",
-                )
-                context_reader_view_response = extract_json_string(
-                    context_reader_view_response
-                )
-
-                all_view = ih_reader_view_response + "\n" + context_reader_view_response
-
-                misleading_response = generate_qwen_3_vl_8b_response(
-                    args,
-                    local_models,
-                    local_processors,
-                    misleading_tmp.replace("{{NEWS_HEADLINE}}", caption)
-                    .replace("{{CONTEXT}}", article_context)
-                    .replace("{{READER_INFER}}", all_view),
-                    image_path,
-                    system="",
-                )
-                misleading_response = extract_json_string(misleading_response)
-
-                print("Reader_views: ", all_view)
-                print("===================================")
-                print("Misleading: ", misleading_response)
-                print("===================================")
-
-                break
-            except:
-                continue
-
-        if repeat == 4:
-            print("max try... Done")
-            break
-
-        all_results[key] = {
-            "caption": caption,
-            "article_context": article_context,
-            "image_path": image_path,
-            "Reader_View": all_view,
-            "Misleading": misleading_response,
-        }
-
-        if sample_count % 5 == 0 and sample_count > 0:
-            with open(
-                f"../results/misleading_detection_{args.data_type}_{args.model}.json",
-                "w",
-                encoding="utf-8",
-            ) as output_file:
-                json.dump(all_results, output_file, ensure_ascii=False, indent=4)
-
-    with open(
-        f"../results/misleading_detection_{args.data_type}_{args.model}.json",
-        "w",
-        encoding="utf-8",
-    ) as output_file:
-        json.dump(all_results, output_file, ensure_ascii=False, indent=4)
+    Misleading_Cause = json.loads(correction_response).get("misleading_cause", "")
+    Suggested_Improvement = json.loads(correction_response).get("suggested_improvement", "")
+    Rewriten_Caption = json.loads(correction_response).get("rewritten_caption", "")
 
 
 if __name__ == "__main__":
@@ -290,5 +214,7 @@ if __name__ == "__main__":
     parser.add_argument("--model", type=str, default="OMGuard")
     parser.add_argument("--device", type=str, default="cuda:0")
     parser.add_argument("--data_type", type=str, default="test")
+    parser.add_argument("--limit_words", type=int, default=3)
+    parser.add_argument("--correction_type", type=str, default="free_form")
     args = parser.parse_args()
     main(args)
