@@ -100,10 +100,14 @@ python eval.py
 ``` -->
 
 ```
-@article{li2026s,
-  title={What's Left Unsaid? Detecting and Correcting Misleading Omissions in Multimodal News Previews},
-  author={Li, Fanxiao and Wu, Jiaying and Fu, Tingchao and Li, Dayang and Wan, Herun and Zhou, Wei and Kan, Min-Yen},
-  journal={arXiv preprint arXiv:2601.05563},
-  year={2026}
+@inproceedings{li-etal-2026-whats-left,
+    title = "What{'}s Left Unsaid? Detecting and Correcting Misleading Omissions in Multimodal News Previews",
+    author = "Li, Fanxiao and Wu, Jiaying and Fu, Tingchao and Li, Dayang and Wan, Herun and Zhou, Wei and Kan, Min-Yen",
+    booktitle = "Proceedings of the 64th Annual Meeting of the {A}ssociation for {C}omputational {L}inguistics (Volume 1: Long Papers)",
+    year = "2026",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2026.acl-long.293/",
+    pages = "6480--6502",
+    ISBN = "979-8-89176-390-6"
 }
 ```
